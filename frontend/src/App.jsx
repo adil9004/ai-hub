@@ -1,135 +1,84 @@
 import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
 import './App.css'
+import Auth from './Auth.jsx'
+import Research from './Research.jsx'
+import ResumeAnalyzer from './ResumeAnalyzer.jsx'
+import JobAssistant from './JobAssistant.jsx'
+import History from './History.jsx'
+import ChatBot from './ChatBot.jsx'
+
+function ComingSoon() {
+  return (
+    <div className="container">
+      <div className="section">
+        <h2>Coming soon</h2>
+        <p style={{ color: 'var(--text-muted)' }}>This feature is currently under development.</p>
+      </div>
+    </div>
+  )
+}
 
 function App() {
-  const [topic, setTopic] = useState('')
-  const [depth, setDepth] = useState('Quick')
-  const [loading, setLoading] = useState(false)
-  const [steps, setSteps] = useState([])
-  const [report, setReport] = useState('')
-  const [error, setError] = useState('')
+  const [token, setToken] = useState(() => {
+    const stored = localStorage.getItem('auth_token')
+    return stored || ''
+  })
+  const [authError, setAuthError] = useState('')
+  const [activeTab, setActiveTab] = useState('Research')
 
-  const isBusyError = (msg) =>
-    msg && (msg.includes('503') || msg.includes('429'))
+  const handleLogin = (newToken) => {
+    setToken(newToken)
+    setAuthError('')
+    localStorage.setItem('auth_token', newToken)
+  }
 
-  const handleSubmit = async () => {
-    if (!topic.trim()) return
-    setLoading(true)
-    setSteps([])
-    setReport('')
-    setError('')
+  const handleLogout = () => {
+    setToken('')
+    setAuthError('')
+    localStorage.removeItem('auth_token')
+  }
 
-    try {
-      const res = await fetch('http://localhost:8000/api/research', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: topic.trim(), depth }),
-      })
+  if (!token) {
+    return <Auth onLogin={handleLogin} initialError={authError} />
+  }
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.detail || `Request failed with status ${res.status}`)
-      }
+  const tabs = ['Research', 'Resume Analyzer', 'Job Assistant', 'History']
 
-      const data = await res.json()
-      setSteps(data.steps || [])
-      setReport(data.report || '')
-    } catch (err) {
-      setError(err.message || 'An error occurred')
-    } finally {
-      setLoading(false)
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'Research': return <Research />
+      case 'Resume Analyzer': return <ResumeAnalyzer />
+      case 'Job Assistant': return <JobAssistant />
+      case 'History': return <History />
+      default: return <ComingSoon />
     }
   }
 
   return (
-    <div className="container">
-      <h1>AI Research Agent</h1>
-
-      <div className="form">
-        <input
-          type="text"
-          className="input"
-          placeholder="Enter a research topic..."
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSubmit()
-          }}
-          disabled={loading}
-        />
-
-        <div className="radio-group">
-          <label className="radio-label">
-            <input
-              type="radio"
-              name="depth"
-              value="Quick"
-              checked={depth === 'Quick'}
-              onChange={() => setDepth('Quick')}
-              disabled={loading}
-            />
-            Quick
-          </label>
-          <label className="radio-label">
-            <input
-              type="radio"
-              name="depth"
-              value="Deep"
-              checked={depth === 'Deep'}
-              onChange={() => setDepth('Deep')}
-              disabled={loading}
-            />
-            Deep
-          </label>
+    <div className="app-wrapper">
+      <header className="main-header">
+        <div className="container header-container">
+          <h1>AI Hub</h1>
+          <button type="button" className="button logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
-
-        <button
-          type="button"
-          className="button"
-          onClick={handleSubmit}
-          disabled={loading || !topic.trim()}
-        >
-          {loading ? 'Researching...' : 'Run'}
-        </button>
-      </div>
-
-      {loading && <p className="status">Researching...</p>}
-
-      {error && (
-        <div className="error">
-          {(isBusyError(error) ? (
-            <p style={{ margin: '0 0 6px', fontWeight: 600 }}>
-              The AI model is busy right now. Please try again in a moment.
-            </p>
-          ) : (
-            <p style={{ margin: '0 0 6px', fontWeight: 600 }}>An error occurred.</p>
-          ))}
-          <p style={{ margin: 0, fontSize: '12px', color: '#9aa3b2', wordBreak: 'break-word' }}>
-            {error}
-          </p>
-        </div>
-      )}
-
-      {steps.length > 0 && (
-        <div className="section">
-          <h2>Steps</h2>
-          <ul className="steps-list">
-            {steps.map((step, i) => (
-              <li key={i}>{step}</li>
+        <div className="tabs-container">
+          <div className="container tabs-scroll">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                className={`tab ${activeTab === tab ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
             ))}
-          </ul>
-        </div>
-      )}
-
-      {report && (
-        <div className="section">
-          <h2>Report</h2>
-          <div className="report">
-            <ReactMarkdown>{report}</ReactMarkdown>
           </div>
         </div>
-      )}
+      </header>
+      <main>{renderContent()}</main>
+      <ChatBot />
     </div>
   )
 }

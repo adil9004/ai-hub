@@ -118,6 +118,7 @@ def run_agent(topic, depth="Quick", on_step=None):
         print("Step (b): Collecting URLs from search results...")
         seen_urls = set()
         url_list = []  # To preserve order
+        all_search_results = []  # Collect all search results for snippet fallback
         
         with ThreadPoolExecutor(max_workers=len(queries)) as executor:
             future_to_query = {executor.submit(web_search, q): q for q in queries}
@@ -125,6 +126,7 @@ def run_agent(topic, depth="Quick", on_step=None):
                 q = future_to_query[future]
                 try:
                     results = future.result()
+                    all_search_results.extend(results)
                     for r in results:
                         url = r.get("url")
                         if url and url not in seen_urls:
@@ -176,13 +178,21 @@ def run_agent(topic, depth="Quick", on_step=None):
         else:
             combined_text = ""
         
+        # If no page text was fetched, fall back to search result snippets
+        if not combined_text:
+            snippets = [r.get("snippet", "") for r in all_search_results if r.get("snippet")]
+            if snippets:
+                combined_text = "\n\n".join(snippets)
+                used_urls = []  # No actual URLs were fetched, so no Sources section
+            else:
+                # No snippets either — return the no-results message without calling Gemini
+                final_answer = "No search results were found for this topic. Try rephrasing it."
+                return final_answer, steps
+        
         # (d) One final Gemini call with the topic and the fetched text, asking for a short bullet-point report
         step_d_start = time.time()
         print("Step (d): Generating final report...")
-        if not combined_text:
-            final_prompt = f"Research the topic: {topic}\n\nNo information could be gathered from the web. Write a short note stating that no information was found."
-        else:
-            final_prompt = f"""Research the topic: {topic}
+        final_prompt = f"""Research the topic: {topic}
 
 Here is the information gathered from the web:
 

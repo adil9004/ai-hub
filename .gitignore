@@ -3,4 +3,6 @@ node_modules/
 __pycache__/
 dist/
 venv/
-*.db
+*.db*
+*.bak
+backend/_resume_app_reference.py

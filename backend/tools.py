@@ -1,25 +1,25 @@
 def web_search(query: str) -> list:
     """Search DuckDuckGo for a query and return top 5 results."""
-    try:
-        # Import inside the function to avoid ImportError at module import time
-        from ddgs import DDGS
-        # Use DDGS as a context manager which ensures proper cleanup
-        with DDGS() as ddgs:
-            # ``text`` returns a list of dictionaries with at least the keys
-            # ``title``, ``href`` and ``body``. Limit to the first 5 results.
-            raw_results = ddgs.text(query, max_results=5)
-        # Transform raw results to the required format
-        formatted = []
-        for r in raw_results:
-            # Some keys might be missing, use ``dict.get`` with a fallback
-            title = r.get("title")
-            url = r.get("href")
-            snippet = r.get("body")
-            formatted.append({"title": title, "url": url, "snippet": snippet})
-        return formatted
-    except Exception:
-        # In case of any error (e.g., missing package, network issue) return empty list
-        return []
+    import time
+    from ddgs import DDGS
+
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            with DDGS() as ddgs:
+                raw_results = ddgs.text(query, max_results=5, region="in-en")
+            formatted = []
+            for r in raw_results:
+                title = r.get("title")
+                url = r.get("href")
+                snippet = r.get("body")
+                formatted.append({"title": title, "url": url, "snippet": snippet})
+            return formatted
+        except Exception as e:
+            print(f"web_search error for '{query}' (attempt {attempt + 1}/{max_attempts}): {e}")
+            if attempt < max_attempts - 1:
+                time.sleep(2)
+    return []
 
 
 def fetch_page(url: str) -> str:
