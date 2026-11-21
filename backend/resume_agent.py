@@ -1,119 +1,66 @@
-import os
-from google import genai
+import hashlib
+import time
+from dotenv import load_dotenv
+from google.genai import types
+from research_agent import _call_gemini_content, GEMINI_MODELS
+from fastapi import HTTPException
 
-def run_agent_steps(client, job_description, resume_text):
-    """
-    Runs a 4-step AI agent process using Gemini.
-    Yields (step_name, current_results_dict) to allow the calling app to show step-by-step progress.
-    """
-    results = {}
+load_dotenv()
+
+_resume_cache = {}
+
+def _resume_key(resume_text, job_description):
+    combined = resume_text + '|||' + job_description
+    return hashlib.sha256(combined.encode('utf-8')).hexdigest()
+
+def _resume_agent(resume_text, job_description):
+    cache_key = _resume_key(resume_text, job_description)
+    if cache_key in _resume_cache:
+        cached_item = _resume_cache[cache_key]
+        return cached_item['text'], cached_item['model']
     
-    # Step 1: Extract key requirements and skills from the job description.
-    yield "🔍 Step 1/4: Analyzing job description for key requirements...", results
-    step1_prompt = f"""
-    You are an expert technical recruiter and talent acquisition specialist.
-    Analyze the following job description and extract the key requirements.
-    Your output should include:
-    1. Key Technical Skills (languages, frameworks, tools)
-    2. Required Soft Skills & Competencies
-    3. Required Experience Level and Qualifications
-    4. Core Responsibilities & Deliverables
+    start_time = time.time()
+    print('JOB ASSISTANT: Analyzing resume and job description...')
+    
+    prompt = f"""Analyze the resume against the job description and provide four sections.
 
-    Job Description:
-    {job_description}
+RESUME:
+{resume_text}
 
-    Provide a well-structured summary using clear markdown headings and bullet points.
-    """
+JOB DESCRIPTION:
+{job_description}
+
+Provide your response in this exact format with these four sections and headings:
+
+## Analysis
+
+Extract key requirements from the job description including technical skills, soft skills, experience level, and core responsibilities.
+
+## Gap Match
+
+Compare the key job requirements against the candidate resume. Identify matched skills, gaps, and alignment score.
+
+## Cover Letter
+
+Write a tailored cover letter with placeholder names.
+
+## Resume Edits
+
+Suggest at least 3 bullet point edits with before, after, and explanation.
+"""
+    
+    config = types.GenerateContentConfig(temperature=0.0, max_output_tokens=3000)
+    
     try:
-        response1 = client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=step1_prompt,
-        )
-        results["step1"] = response1.text
+        response_text, used_model = _call_gemini_content(prompt, config)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise RuntimeError("Something went wrong while analyzing. Please try again in a moment.") from e
+        raise HTTPException(status_code=503, detail='AI service busy, please try again in a minute.') from e
     
-    # Step 2: Compare those requirements against the resume text and identify matches and gaps.
-    yield "⚖️ Step 2/4: Comparing requirements with your resume to find matches & gaps...", results
-    step2_prompt = f"""
-    You are an expert career consultant.
-    Compare the key job requirements extracted from the job description against the candidate's resume.
+    _resume_cache[cache_key] = {'text': response_text, 'model': used_model}
     
-    Key Job Requirements:
-    {results["step1"]}
-
-    Candidate Resume:
-    {resume_text}
-
-    Analyze and identify:
-    1. Matched Skills/Experience: What is already well-represented in the resume.
-    2. Missing / Gap Areas: What requirements are missing or weak in the resume.
-    3. Alignment Score: Give an estimated fit percentage (0-100%) with a brief justification.
-
-    Provide a clear, structured comparison with matched points and gaps.
-    """
-    try:
-        response2 = client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=step2_prompt,
-        )
-        results["step2"] = response2.text
-    except Exception as e:
-        raise RuntimeError("Something went wrong while analyzing. Please try again in a moment.") from e
+    elapsed = time.time() - start_time
+    print(f'JOB ASSISTANT DONE in {elapsed:.1f}s using {used_model}')
     
-    # Step 3: Generate a tailored cover letter based on the comparison.
-    yield "✉️ Step 3/4: Crafting your tailored professional cover letter...", results
-    step3_prompt = f"""
-    You are an expert professional writer and career coach.
-    Write a highly tailored, compelling professional cover letter for the candidate applying to this job. 
-    Use the candidate's resume and the comparison of matches and gaps to create a cover letter that:
-    1. Grabs attention in the opening paragraph.
-    2. Highlights matched key achievements and relevant skills.
-    3. Addresses or bridges any key gap areas gracefully using transferable skills or enthusiasm for learning.
-    4. Concludes with a strong call to action.
-
-    Candidate Resume:
-    {resume_text}
-
-    Job Requirements & Comparison:
-    {results["step2"]}
-
-    Ensure the cover letter is written in a professional, engaging tone. Use placeholders like [Candidate Name], [Hiring Manager Name], [Company Name], and [Date] where appropriate.
-    """
-    try:
-        response3 = client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=step3_prompt,
-        )
-        results["step3"] = response3.text
-    except Exception as e:
-        raise RuntimeError("Something went wrong while analyzing. Please try again in a moment.") from e
-    
-    # Step 4: Suggest specific resume bullet-point edits to better match the job.
-    yield "✍️ Step 4/4: Formulating high-impact resume bullet-point edits...", results
-    step4_prompt = f"""
-    You are an expert resume writer.
-    Suggest specific actionable bullet-point edits to the candidate's resume based on the job requirements.
-    For each suggestion, identify a weak or generic bullet point from the resume, and provide:
-    1. The Original Bullet Point (from the resume)
-    2. The Revised Bullet Point (tailored with high-impact action verbs, keywords from the job description, and metric-focused wording where possible)
-    3. Explanation / Why: Briefly explain why this edit makes the resume stronger and more aligned with the job description.
-
-    Candidate Resume:
-    {resume_text}
-
-    Job Requirements & Comparison:
-    {results["step2"]}
-
-    Provide at least 3 high-impact bullet-point suggestions.
-    """
-    try:
-        response4 = client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=step4_prompt,
-        )
-        results["step4"] = response4.text
-    except Exception as e:
-        raise RuntimeError("Something went wrong while analyzing. Please try again in a moment.") from e
-    
-    yield "Complete", results
+    return response_text

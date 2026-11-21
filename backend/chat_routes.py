@@ -6,6 +6,7 @@ from typing import List, Optional
 from google import genai
 from google.genai import types
 from auth import get_current_user
+from research_agent import _call_gemini, _call_gemini_content, GEMINI_MODELS, _parse_gemini_error
 
 router = APIRouter(prefix="/api")
 
@@ -59,22 +60,25 @@ def chat_endpoint(req: ChatRequest, current_user: str = Depends(get_current_user
         current_msg = req.message.strip()
         prompt += f"User: {current_msg}\nAssistant:"
 
-        response = client.models.generate_content(
-            model="gemini-3.5-flash-lite",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.7,
-                max_output_tokens=500,
-                thinking_config=types.ThinkingConfig(thinking_budget=0)
-            )
+        config = types.GenerateContentConfig(
+            temperature=0.0
         )
-        return {"reply": response.text}
+
+        response_text, _ = _call_gemini_content(
+            prompt,
+            config
+        )
+        return {"reply": response_text}
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        print("Chat API Error:", e)
-        traceback.print_exc()
+        short_err = _parse_gemini_error(e, GEMINI_MODELS[0] if GEMINI_MODELS else "unknown")
+        print(short_err)
         raise HTTPException(
-            status_code=500,
-            detail="An error occurred while generating a response. Please try again."
+            status_code=429,
+            detail=short_err
         )
+
+
 
 

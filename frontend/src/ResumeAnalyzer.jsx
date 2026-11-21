@@ -1,22 +1,22 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import './App.css'
 import { authFetch } from './api'
 
-function ResumeAnalyzer({ onAnalysisComplete }) {
-  const [file, setFile] = useState(null)
+function ResumeAnalyzer({ activeResume, setActiveResume, onAnalysisComplete }) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
+  const fileInputRef = useRef(null)
 
   const handleSubmit = async () => {
-    if (!file) return
+    if (!activeResume) return
     setLoading(true)
     setError('')
     setResult(null)
 
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', activeResume)
 
     try {
       const res = await authFetch('/api/resume/analyze', {
@@ -26,13 +26,13 @@ function ResumeAnalyzer({ onAnalysisComplete }) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.detail || `Request failed with status ${res.status}`)
+        throw new Error(data.detail || 'Request failed with status ' + res.status)
       }
 
       const data = await res.json()
       setResult(data)
       if (onAnalysisComplete) {
-        onAnalysisComplete(file)
+        onAnalysisComplete(activeResume)
       }
     } catch (err) {
       setError(err.message || 'An error occurred')
@@ -48,19 +48,79 @@ function ResumeAnalyzer({ onAnalysisComplete }) {
       </div>
 
       <div className="form">
+        {/* Hidden file input for "Change resume" */}
         <input
           type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
           accept="application/pdf"
-          className="input"
-          onChange={(e) => setFile(e.target.files[0] || null)}
+          onChange={(e) => {
+            const f = e.target.files[0]
+            if (f && setActiveResume) {
+              setActiveResume(f)
+            }
+            // Reset input to allow selecting same file again
+            e.target.value = ''
+          }}
           disabled={loading}
         />
+
+        {activeResume ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            background: 'var(--bg)',
+            border: '1px solid var(--border)',
+            borderRadius: '8px',
+            padding: '12px 14px',
+            width: '100%'
+          }}>
+            <span style={{
+              fontSize: '14px',
+              color: 'var(--text)',
+              wordBreak: 'break-word'
+            }}>
+              Using resume: {activeResume.name}
+            </span>
+            <button
+              type="button"
+              className="button"
+              style={{
+                alignSelf: 'auto',
+                padding: '6px 14px',
+                fontSize: '13px',
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                color: 'var(--text)'
+              }}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+            >
+              Change resume
+            </button>
+          </div>
+        ) : (
+          <input
+            type="file"
+            accept="application/pdf"
+            className="input"
+            onChange={(e) => {
+              const f = e.target.files[0] || null
+              if (f && setActiveResume) {
+                setActiveResume(f)
+              }
+            }}
+            disabled={loading}
+          />
+        )}
 
         <button
           type="button"
           className="button"
           onClick={handleSubmit}
-          disabled={loading || !file}
+          disabled={loading || !activeResume}
         >
           {loading ? 'Analyzing...' : 'Analyze'}
         </button>

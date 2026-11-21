@@ -1,7 +1,18 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import './App.css'
 import { authFetch } from './api'
+
+// Check if the error message indicates the AI service is busy
+function isBusyError(errorMessage) {
+  if (typeof errorMessage !== 'string') return false
+  const lower = errorMessage.toLowerCase()
+  return lower.includes('busy') || 
+         lower.includes('429') || 
+         lower.includes('503') || 
+         lower.includes('unavailable') ||
+         lower.includes('resource_exhausted')
+}
 
 function Research() {
   const [topic, setTopic] = useState('')
@@ -10,9 +21,18 @@ function Research() {
   const [steps, setSteps] = useState([])
   const [report, setReport] = useState('')
   const [error, setError] = useState('')
+  const textareaRef = useRef(null)
 
-  const isBusyError = (msg) =>
-    msg && (msg.includes('503') || msg.includes('429'))
+  const adjustHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 320)}px`
+    }
+  }
+
+  useEffect(() => {
+    adjustHeight()
+  }, [topic])
 
   const handleSubmit = async () => {
     if (!topic.trim()) return
@@ -29,12 +49,17 @@ function Research() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.detail || `Request failed with status ${res.status}`)
+        const detail = data.detail
+        const errorMsg = typeof detail === 'string' 
+          ? detail 
+          : (detail ? JSON.stringify(detail) : `Request failed with status ${res.status}`)
+        throw new Error(errorMsg)
       }
 
       const data = await res.json()
       setSteps(data.steps || [])
-      setReport(data.report || '')
+      const reportValue = data.report
+      setReport(typeof reportValue === 'string' ? reportValue : '')
     } catch (err) {
       setError(err.message || 'An error occurred')
     } finally {
@@ -49,16 +74,19 @@ function Research() {
       </div>
 
       <div className="form">
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           className="input"
           placeholder="Enter a research topic..."
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSubmit()
-          }}
           disabled={loading}
+          style={{ 
+            resize: 'none', 
+            fontFamily: 'inherit', 
+            minHeight: '56px',
+            overflowY: 'auto' 
+          }}
         />
 
         <div className="radio-group">

@@ -2,6 +2,7 @@ import os
 import io
 import json
 import time
+import traceback
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from google import genai
 from google.genai import types
@@ -9,9 +10,9 @@ from dotenv import load_dotenv
 
 from auth import get_current_user
 from resume_db import save_analysis, get_all_analyses, delete_analysis
-from resume_agent import run_agent_steps
+from resume_agent import _resume_agent
 from qa_chatbot import ask_document_question
-from research_agent import _call_gemini
+from research_agent import _call_gemini, _call_gemini_content
 
 load_dotenv()
 
@@ -88,8 +89,13 @@ async def analyze_resume_endpoint(
     if resume_text is None or resume_text.strip() == "":
         raise HTTPException(status_code=400, detail="We couldn't read this PDF. Please try a different file or make sure it's not a scanned image.")
 
-    result = analyze_resume(resume_text)
-    save_analysis(file.filename, resume_text, result, current_user)
+    try:
+        result = analyze_resume(resume_text)
+        save_analysis(file.filename, resume_text, result, current_user)
+    except Exception as e:
+        print(f"RESUME AGENT ERROR: {type(e).__name__}: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
 
     return {"filename": file.filename, "analysis_result": result}
 
@@ -129,21 +135,14 @@ async def job_assistant_endpoint(
     if resume_text is None or resume_text.strip() == "":
         raise HTTPException(status_code=400, detail="We couldn't read this PDF. Please try a different file or make sure it's not a scanned image.")
 
-    results = {}
-    agent_generator = run_agent_steps(client, job_description, resume_text)
     try:
-        step_msg, results = next(agent_generator)
-        while step_msg != "Complete":
-            step_msg, results = next(agent_generator)
-    except StopIteration:
-        pass
+        result_text = _resume_agent(resume_text, job_description)
+    except Exception as e:
+        print(f"RESUME AGENT ERROR: {type(e).__name__}: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
 
-    return {
-        "step1": results.get("step1", ""),
-        "step2": results.get("step2", ""),
-        "step3": results.get("step3", ""),
-        "step4": results.get("step4", ""),
-    }
+    return {"result": result_text}
 
 
 @router.post("/qa")
