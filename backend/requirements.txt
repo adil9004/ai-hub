@@ -4,9 +4,8 @@ python-multipart
 python-dotenv
 google-genai
 pydantic
-pyjwt
+PyJWT
 bcrypt
-passlib
 ddgs
 requests
 beautifulsoup4
