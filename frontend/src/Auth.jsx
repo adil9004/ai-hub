@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import { API_URL } from './api';
 
 function Auth({ onLogin, initialError }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,7 +14,7 @@ function Auth({ onLogin, initialError }) {
     setError('');
     setIsLoading(true);
 
-    const endpoint = isLogin ? 'http://localhost:8000/api/login' : 'http://localhost:8000/api/register';
+    const endpoint = isLogin ? `${API_URL}/api/login` : `${API_URL}/api/register`;
 
     const requestBody = { username, password };
 

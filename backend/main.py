@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -14,13 +15,29 @@ app = FastAPI()
 auth_init_db()
 resume_init_db()
 
+# Read allowed origins from environment variable
+frontend_url = os.getenv("FRONTEND_URL", "")
+allowed_origins = ["http://localhost:5173"]
+if frontend_url:
+    for origin in frontend_url.split(","):
+        origin = origin.strip()
+        if origin and origin not in allowed_origins:
+            allowed_origins.append(origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def create_demo_user():
+    """Create a demo user if one doesn't exist."""
+    if not get_user("demo"):
+        create_user("demo", "demo1234")
 
 app.include_router(resume_router)
 app.include_router(chat_router)
