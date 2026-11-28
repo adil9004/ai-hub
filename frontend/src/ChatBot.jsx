@@ -37,6 +37,7 @@ function ChatBot() {
   }
 
   const normalizePhrase = (txt) => {
+    if (typeof txt !== 'string') return ''
     return txt
       .trim()
       .toLowerCase()
@@ -204,7 +205,7 @@ function ChatBot() {
           placeholder="Ask a question..."
           disabled={loading}
         />
-        <button onClick={handleSend} disabled={loading || !input.trim()}>Send</button>
+        <button className="button" onClick={handleSend} disabled={loading || !input.trim()}>Send</button>
       </div>
     </div>
   )

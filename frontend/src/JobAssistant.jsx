@@ -123,9 +123,9 @@ function JobAssistant({ activeResume, setActiveResume }) {
             <button
               type="button"
               className="copy-btn"
-              onClick={() => {
+              onClick={(e) => {
                 navigator.clipboard.writeText(result.result)
-                const btn = event.target.closest('button')
+                const btn = e.currentTarget
                 btn.classList.add('copied')
                 btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied'
                 setTimeout(() => {

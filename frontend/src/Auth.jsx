@@ -180,8 +180,8 @@ function Auth({ onLogin, initialError }) {
             onClick={(e) => {
               if (!isLoading) handleSubmit(e, true);
             }}
-            className="button"
-            style={{ width: '100%', background: 'var(--gradient-primary)', color: '#0b0d12', border: 'none' }}
+            className="button button--shimmer"
+            style={{ width: '100%' }}
           >
             Try Demo Account
           </button>

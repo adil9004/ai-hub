@@ -1,4 +1,4 @@
-:root { --bg: #0f1115; --bg-elevated: #171a21; --border: #2a2f3a; --text: #e6e8ee; --text-muted: #9aa3b2; --accent: #6ea8fe; --accent-bg: rgba(110, 168, 254, 0.12); --danger: #ff6b6b; --violet: #a855f7; --gradient-primary: linear-gradient(135deg, #6ea8fe 0%, #a855f7 100%); --gradient-primary-hover: linear-gradient(135deg, #5a94e8 0%, #9333ea 100%); --gradient-text: linear-gradient(135deg, #6ea8fe 0%, #a855f7 100%); --gradient-page: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(110, 168, 254, 0.15) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.12) 0%, transparent 50%), #0f1115; --glass-bg: rgba(23, 26, 33, 0.7); --glass-border: rgba(42, 47, 58, 0.6); --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); --focus-ring: 0 0 0 3px rgba(110, 168, 254, 0.35); --transition: 150ms ease; }
+:root { --bg: #0f1115; --bg-elevated: #171a21; --border: #2a2f3a; --text: #e6e8ee; --text-muted: #9aa3b2; --accent: #6ea8fe; --accent-bg: rgba(110, 168, 254, 0.12); --danger: #ff6b6b; --violet: #a855f7; --indigo: #4f46e5; --indigo-violet-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); --indigo-violet-gradient-hover: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); --gradient-primary: linear-gradient(135deg, #6ea8fe 0%, #a855f7 100%); --gradient-primary-hover: linear-gradient(135deg, #5a94e8 0%, #9333ea 100%); --gradient-text: linear-gradient(135deg, #6ea8fe 0%, #a855f7 100%); --gradient-page: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(110, 168, 254, 0.15) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.12) 0%, transparent 50%), #0f1115; --glass-bg: rgba(23, 26, 33, 0.7); --glass-border: rgba(42, 47, 58, 0.6); --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); --focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.45); --transition: 200ms ease-out; --transition-fast: 150ms ease-out; --shimmer-gradient: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0) 100%); }
 *, *::before, *::after { box-sizing: border-box; }
 input, textarea, button { max-width: 100%; }
 html, body { height: 100%; }
@@ -66,21 +66,33 @@ body { margin: 0; background: var(--gradient-page); background-attachment: fixed
 }
 
 .logout-btn {
-  background: transparent;
-  color: var(--text-muted);
-  border: 1px solid var(--glass-border);
+  background: var(--indigo-violet-gradient);
+  color: #fff;
+  border: none;
   padding: 8px 16px;
   border-radius: 10px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all var(--transition);
 }
 
-.logout-btn:hover {
-  background: var(--glass-bg);
-  border-color: var(--border);
-  color: var(--text);
+.logout-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+  background: var(--indigo-violet-gradient-hover);
+}
+
+.logout-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.logout-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .logout-btn:focus-visible {
@@ -120,7 +132,7 @@ body { margin: 0; background: var(--gradient-page); background-attachment: fixed
   align-items: center;
   gap: 8px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--glass-border);
   color: var(--text-muted);
   padding: 8px 16px;
   border-radius: 999px;
@@ -134,18 +146,27 @@ body { margin: 0; background: var(--gradient-page); background-attachment: fixed
 .tab:hover:not(.active) {
   color: var(--text);
   background: var(--glass-bg);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 16px rgba(99, 102, 241, 0.25);
+  transform: translateY(-2px);
 }
 
 .tab.active {
-  background: var(--gradient-primary);
-  color: #0b0d12;
+  background: var(--indigo-violet-gradient);
+  color: #fff;
   border-color: transparent;
+  transform: none;
 }
 
 .tab svg {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
+}
+
+.tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 main {
@@ -245,31 +266,36 @@ textarea.input {
   justify-content: center;
   gap: 10px;
   padding: 12px 22px;
-  background: var(--gradient-primary);
-  color: #0b0d12;
+  background: var(--indigo-violet-gradient);
+  color: #fff;
   border: none;
   border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+  transition: all var(--transition);
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
 }
 
 .button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(110, 168, 254, 0.35);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+  background: var(--indigo-violet-gradient-hover);
 }
 
 .button:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
+  box-shadow: none;
 }
 
 .button:disabled {
-  opacity: 0.45;
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  background: var(--indigo-violet-gradient);
 }
 
 .button:focus-visible {
@@ -277,17 +303,90 @@ textarea.input {
   box-shadow: var(--focus-ring);
 }
 
+/* Shimmer effect for Try Demo Account button */
+.button--shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--shimmer-gradient);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.button--shimmer:disabled::before,
+.button--shimmer.loading::before {
+  animation-play-state: paused;
+  opacity: 0;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .tab,
+  .radio-label,
+  .example-chip {
+    transition: none !important;
+  }
+  .button:hover:not(:disabled),
+  .tab:hover:not(.active),
+  .radio-label:hover,
+  .example-chip:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  .button:active:not(:disabled),
+  .tab.active,
+  .radio-label input:checked + span {
+    transform: none !important;
+  }
+  .button--shimmer::before {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}
+
 .button-secondary {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--glass-border);
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
 }
 
 .button-secondary:hover:not(:disabled) {
   background: var(--glass-bg);
-  border-color: var(--border);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 16px rgba(99, 102, 241, 0.25);
+  transform: translateY(-2px);
+}
+
+.button-secondary:active:not(:disabled) {
+  transform: scale(0.98);
   box-shadow: none;
-  transform: translateY(-1px);
+}
+
+.button-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.button-secondary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .button-ghost {
@@ -296,20 +395,58 @@ textarea.input {
   border: none;
   padding: 8px 12px;
   font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition);
 }
 
 .button-ghost:hover:not(:disabled) {
   color: var(--violet);
   text-decoration: underline;
+}
+
+.button-ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Danger button for delete actions */
+.button.danger-btn,
+.danger-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+}
+
+.button.danger-btn:hover:not(:disabled),
+.danger-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+}
+
+.button.danger-btn:active:not(:disabled),
+.danger-btn:active:not(:disabled) {
+  transform: scale(0.98);
   box-shadow: none;
+}
+
+.button.danger-btn:disabled,
+.danger-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
   transform: none;
+  box-shadow: none;
+}
+
+.button.danger-btn:focus-visible,
+.danger-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.45);
 }
 
 .button .spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(11, 13, 18, 0.2);
-  border-top-color: #0b0d12;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -343,6 +480,21 @@ textarea.input {
 .radio-label:hover {
   border-color: var(--accent);
   color: var(--text);
+  background: var(--glass-bg);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 16px rgba(99, 102, 241, 0.25);
+  transform: translateY(-2px);
+}
+
+.radio-label:has(input:checked) {
+  background: var(--indigo-violet-gradient);
+  color: #fff;
+  border-color: transparent;
+  transform: none;
+}
+
+.radio-label:has(input:checked):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 16px rgba(99, 102, 241, 0.25);
 }
 
 .radio-label input {
@@ -350,6 +502,11 @@ textarea.input {
   width: 16px;
   height: 16px;
   cursor: pointer;
+}
+
+.radio-label:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .status {
@@ -605,10 +762,17 @@ textarea.input {
   white-space: nowrap;
 }
 
-.example-chip:hover {
+.example-chip:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-bg);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 16px rgba(99, 102, 241, 0.25);
+  transform: translateY(-2px);
+}
+
+.example-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .example-chip:focus-visible {
