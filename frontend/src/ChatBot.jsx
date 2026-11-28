@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
 import './App.css'
 import { authFetch } from './api'
 
@@ -39,7 +40,7 @@ function ChatBot() {
     return txt
       .trim()
       .toLowerCase()
-      .replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '')
+      .replace(/[.,/#!$%^&*;:{}=\\-_`~()]/g, '')
       .split(/\s+/)
       .map((w) => (w === 'u' ? 'you' : w))
       .filter(Boolean)
@@ -112,8 +113,10 @@ function ChatBot() {
 
   if (!isOpen) {
     return (
-      <button className="chat-fab" onClick={() => setIsOpen(true)}>
-        {'\u{1F4AC}'}
+      <button className="chat-fab" onClick={() => setIsOpen(true)} aria-label="Open chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
       </button>
     )
   }
@@ -121,18 +124,76 @@ function ChatBot() {
   return (
     <div className="chat-panel">
       <div className="chat-header">
-        <span>AI Assistant</span>
+        <div className="chat-header-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          AI Assistant
+        </div>
         <div className="chat-header-actions">
-          <button type="button" className="chat-clear-btn" onClick={handleClear} title="Clear chat">Clear</button>
-          <button type="button" className="chat-close-btn" onClick={() => setIsOpen(false)}>×</button>
+          <button type="button" className="chat-clear-btn" onClick={handleClear} title="Clear chat" aria-label="Clear chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+          </button>
+          <button type="button" className="chat-close-btn" onClick={() => setIsOpen(false)} aria-label="Close chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
       </div>
       <div className="chat-messages">
-        {messages.map((m, i) => (
-          <div key={i} className={`message ${m.role}`}>{m.content}</div>
-        ))}
-        {loading && <div className="message ai">Typing...</div>}
-        {error && <div className="message error">{error}</div>}
+        {messages.map((m, i) => {
+          if (m.role === 'user') {
+            return (
+              <div key={i} className="message user">
+                <div className="message-avatar">U</div>
+                <div className="message-bubble">{m.content}</div>
+              </div>
+            )
+          }
+          // Assistant messages use react-markdown
+          return (
+            <div key={i} className="message ai">
+              <div className="message-avatar">AI</div>
+              <div className="message-bubble">
+                <ReactMarkdown
+                  children={m.content}
+                  className="markdown-content"
+                  components={{
+                    a: (props) => (
+                      <a {...props} target="_blank" rel="noopener noreferrer">
+                        {props.children}
+                      </a>
+                    ),
+                    code: (props) => (
+                      <code {...props} />
+                    ),
+                    pre: (props) => (
+                      <pre {...props} />
+                    )
+                  }}
+                />
+              </div>
+            </div>
+          )
+        })}
+        {loading && (
+          <div className="message ai">
+            <div className="message-avatar">AI</div>
+            <div className="message-bubble">Typing...</div>
+          </div>
+        )}
+        {error && (
+          <div className="message error">
+            <div className="message-bubble">{error}</div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       <div className="chat-input">

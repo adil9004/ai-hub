@@ -1,7 +1,9 @@
+import os
 import sqlite3
 from datetime import datetime
 
-DB_FILE = "resume_analyzer.db"
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(BACKEND_DIR, "resume_analyzer.db")
 
 def init_db():
     """Initializes the SQLite database and creates the analyses table if it doesn't exist."""

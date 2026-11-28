@@ -12,10 +12,13 @@ if not JWT_SECRET:
     # Safe fallback for local development only
     JWT_SECRET = "dev-secret-key-change-in-production"
 
+# Backend directory for absolute paths
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def get_db():
     """Get a database connection."""
-    db_path = os.path.join(os.path.dirname(__file__), "users.db")
+    db_path = os.path.join(BACKEND_DIR, "users.db")
     conn = sqlite3.connect(db_path, timeout=10)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.row_factory = sqlite3.Row

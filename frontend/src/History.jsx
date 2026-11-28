@@ -57,36 +57,41 @@ function History() {
 
       {error && (
         <div className="error">
-          <p style={{ margin: '0 0 6px', fontWeight: 600 }}>An error occurred.</p>
-          <p style={{ margin: 0, fontSize: '12px', color: '#9aa3b2', wordBreak: 'break-word' }}>
-            {error}
-          </p>
+          <p className="error-header">An error occurred.</p>
+          <p className="error-detail">{error}</p>
         </div>
       )}
 
       {!loading && analyses.length === 0 && (
-        <div className="section">
-          <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-            No analyses yet. Run your first analysis from the Resume Analyzer tab.
-          </p>
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          </div>
+          <h3 className="empty-state-title">No analyses yet</h3>
+          <p className="empty-state-text">Run your first analysis from the Resume Analyzer tab.</p>
         </div>
       )}
 
       <div className="history-list">
         {analyses.map((a) => (
-          <div className="section history-item" key={a.id}>
-            <div className="history-header">
+          <div className="history-card" key={a.id}>
+            <div className="history-card-header">
               <div>
-                <h3 style={{ margin: 0, fontSize: '16px' }}>{a.filename}</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
-                  {new Date(a.timestamp).toLocaleString()}
-                </p>
+                <h3 className="history-title">{a.filename}</h3>
+                <span className="history-badge">{new Date(a.timestamp).toLocaleString()}</span>
               </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div className="history-actions">
                 <button
                   type="button"
-                  className="tab"
+                  className="button-secondary"
                   onClick={() => setExpandedId(expandedId === a.id ? null : a.id)}
+                  style={{ padding: '6px 12px', fontSize: '13px' }}
                 >
                   {expandedId === a.id ? 'Hide' : 'View'}
                 </button>
@@ -94,14 +99,17 @@ function History() {
                   type="button"
                   className="button danger-btn"
                   onClick={() => handleDelete(a.id)}
+                  style={{ padding: '6px 12px', fontSize: '13px' }}
                 >
                   Delete
                 </button>
               </div>
             </div>
             {expandedId === a.id && (
-              <div className="report" style={{ marginTop: '16px' }}>
-                <ReactMarkdown>{a.analysis_result}</ReactMarkdown>
+              <div className="history-card-content">
+                <div className="glass-card">
+                  <ReactMarkdown>{a.analysis_result}</ReactMarkdown>
+                </div>
               </div>
             )}
           </div>

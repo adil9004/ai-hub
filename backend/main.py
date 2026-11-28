@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -11,9 +12,38 @@ from resume_routes import router as resume_router
 from chat_routes import router as chat_router
 from resume_db import init_db as resume_init_db
 
-app = FastAPI()
-auth_init_db()
-resume_init_db()
+# Get backend directory for absolute paths
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup: Create tables and ensure demo user exists
+    auth_init_db()
+    resume_init_db()
+    
+    # Ensure demo user exists (idempotent)
+    demo_exists = get_user("demo")
+    if not demo_exists:
+        create_user("demo", "demo1234")
+    else:
+        # Verify password is demo1234 (handle if it was changed)
+        if not verify_password("demo1234", demo_exists["password_hash"]):
+            # Delete and recreate if password mismatch
+            import sqlite3
+            db_path = os.path.join(BACKEND_DIR, "users.db")
+            conn = sqlite3.connect(db_path)
+            conn.execute("DELETE FROM users WHERE username = 'demo'")
+            conn.commit()
+            conn.close()
+            create_user("demo", "demo1234")
+
+            create_user("demo", "demo1234")
+    
+    yield
+    
+    # Shutdown: Cleanup if needed (future use)
 
 # Read allowed origins from environment variable
 frontend_url = os.getenv("FRONTEND_URL", "")
@@ -24,20 +54,15 @@ if frontend_url:
         if origin and origin not in allowed_origins:
             allowed_origins.append(origin)
 
+app = FastAPI(lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
-
-
-@app.on_event("startup")
-def create_demo_user():
-    """Create a demo user if one doesn't exist."""
-    if not get_user("demo"):
-        create_user("demo", "demo1234")
 
 app.include_router(resume_router)
 app.include_router(chat_router)
